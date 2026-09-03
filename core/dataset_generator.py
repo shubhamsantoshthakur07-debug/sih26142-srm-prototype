@@ -16,13 +16,13 @@ SPECTRAL_SIGNATURES = {
     4: np.array([0.22, 0.22, 0.22, 0.20], dtype=np.float32), # Roads / Asphalt runway
 }
 
-def generate_tactical_scene(scene_type: str = "border_facility", hr_size: int = 256) -> dict:
+def generate_tactical_scene(scene_type: str = "border_facility", hr_size: int = 512) -> dict:
     """
     Generates a paired (HR 2.5m, MR 10m, SRM Ground Truth) multi-spectral scene.
     
     Args:
         scene_type: "border_facility", "naval_coastal", "airfield_base", or "river_valley"
-        hr_size: High-resolution raster dimension (e.g. 256x256)
+        hr_size: High-resolution raster dimension (e.g. 512x512)
     """
     hr_mask = np.zeros((hr_size, hr_size), dtype=np.int64) # 0=Soil, 1=Water, 2=Veg, 3=Facility, 4=Road
     

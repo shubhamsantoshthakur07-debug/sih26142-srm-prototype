@@ -219,23 +219,22 @@ function renderVectors() {
     }
 
     const features = currentResult.geojson.features || [];
-    const scale = 512 / 256; // 2x display scaling
+    const meters_per_deg_lat = 111320.0;
+    const meters_per_deg_lon = 111320.0 * Math.cos(28.6139 * Math.PI / 180.0);
+    const pixel_res_meters = 2.5;
 
     features.forEach(feat => {
         const geom = feat.geometry;
-        const props = feat.properties;
 
         if (geom.type === "Polygon") {
-            // Draw building / facility boundary
-            ctx.fillStyle = "rgba(255, 69, 0, 0.35)";
-            ctx.strokeStyle = "#ff4500";
-            ctx.lineWidth = 1.5;
+            ctx.fillStyle = "rgba(255, 69, 0, 0.25)";
+            ctx.strokeStyle = "#ff5722";
+            ctx.lineWidth = 2;
             
             ctx.beginPath();
             geom.coordinates[0].forEach((pt, idx) => {
-                // Approximate mapping to canvas space
-                const x = ((pt[0] - 77.2090) * 40000 + 128) * scale;
-                const y = ((28.6139 - pt[1]) * 40000 + 128) * scale;
+                const x = ((pt[0] - 77.2090) * meters_per_deg_lon) / pixel_res_meters;
+                const y = ((28.6139 - pt[1]) * meters_per_deg_lat) / pixel_res_meters;
                 if (idx === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             });
@@ -243,20 +242,17 @@ function renderVectors() {
             ctx.fill();
             ctx.stroke();
         } else if (geom.type === "LineString") {
-            // Draw road / linear infrastructure
-            ctx.strokeStyle = "rgba(255, 235, 59, 0.9)";
+            ctx.strokeStyle = "#ffd700";
             ctx.lineWidth = 2.5;
-            ctx.setLineDash([4, 2]);
 
             ctx.beginPath();
             geom.coordinates.forEach((pt, idx) => {
-                const x = ((pt[0] - 77.2090) * 40000 + 128) * scale;
-                const y = ((28.6139 - pt[1]) * 40000 + 128) * scale;
+                const x = ((pt[0] - 77.2090) * meters_per_deg_lon) / pixel_res_meters;
+                const y = ((28.6139 - pt[1]) * meters_per_deg_lat) / pixel_res_meters;
                 if (idx === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             });
             ctx.stroke();
-            ctx.setLineDash([]);
         }
     });
 }

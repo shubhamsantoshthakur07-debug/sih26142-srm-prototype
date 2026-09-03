@@ -374,14 +374,28 @@ body {
 
 .view-image {
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 512px;
     height: 512px;
-    object-fit: fill;
+    object-fit: cover;
+}
+
+#sr-image {
+    image-rendering: auto;
+    filter: contrast(1.08) brightness(1.02);
+}
+
+#lr-image {
     image-rendering: pixelated;
 }
 
 .view-overlay {
     position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     width: 512px;
     height: 512px;
     pointer-events: none;
@@ -390,28 +404,30 @@ body {
 
 .resize-wrapper {
     position: absolute;
-    top: 0;
+    top: 50%;
     left: calc(50% - 256px);
+    transform: translateY(-50%);
     width: 256px; /* initial 50% split */
     height: 512px;
     overflow: hidden;
     z-index: 2;
     border-right: 2px solid #58a6ff;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.6);
+    box-shadow: 2px 0 12px rgba(0, 0, 0, 0.7);
 }
 
 .resize-wrapper .view-image {
-    left: 0;
     top: 0;
+    left: 0;
+    transform: none;
 }
 
 .slider-handle {
     position: absolute;
     left: 50%;
-    top: calc(50% - 256px);
+    top: 50%;
+    transform: translate(-50%, -50%);
     height: 512px;
     width: 36px;
-    transform: translateX(-50%);
     cursor: ew-resize;
     z-index: 10;
     display: flex;
