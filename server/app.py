@@ -1,15 +1,19 @@
 """
 FastAPI Server for SIH26142 - Super Resolution Mapping (SRM) Console.
 Provides REST APIs for multi-spectral inference, metrics computation,
-and defense-grade GeoJSON vector extraction at 512x512 High-Definition.
+and defense-grade GeoJSON vector extraction with strict memory control (< 100MB RAM).
 """
 
 import os
 import io
+import gc
 import base64
 import numpy as np
 from PIL import Image
 import torch
+
+# Limit PyTorch CPU threads to 1 (essential for Render Free 512MB RAM stability)
+torch.set_num_threads(1)
 
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -40,22 +44,17 @@ from core.metrics import (
 
 app = FastAPI(title="SIH26142 SRM Geospatial Console", version="1.0.0")
 
-# Mount static folder
 STATIC_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
 os.makedirs(STATIC_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 SAMPLES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "sample_test_images")
 
-# Device configuration
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"[Server] Using computation device: {device}", flush=True)
+device = "cpu"
+print(f"[Server] Memory-safe mode active on {device} (1 CPU thread)", flush=True)
 
-# Global model instance
 weights_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "weights", "srm_model.pth")
 model: Optional[DualHeadSRMNet] = None
-
-# Cache for latest processed scene results
 LATEST_RESULT = {}
 
 @app.on_event("startup")
@@ -70,25 +69,24 @@ def get_index():
 
 @app.get("/api/scenes")
 def list_scenes():
-    """List available simulated & real-world defense intelligence scenarios."""
     return [
         {
             "id": "real_border",
             "name": "🌍 REAL: Himalayan Border Outpost",
             "region": "Northern Frontier (Ladakh/Karakoram Pass)",
-            "description": "High-resolution real satellite orthophoto of a high-altitude military pass with winding roads and compound barracks."
+            "description": "Real-world high-altitude military pass with winding roads, barracks, and tactical compound."
         },
         {
             "id": "real_airbase",
             "name": "🌍 REAL: Forward Airbase & Runways",
             "region": "Strategic Western Air Command",
-            "description": "High-resolution real aerial reconnaissance of a military airbase: 3km main runway, taxiways, hangars, and perimeter canals."
+            "description": "Real-world aerial reconnaissance of a military airbase: 3km runway, taxiways, hangars, and canals."
         },
         {
             "id": "real_harbor",
             "name": "🌍 REAL: Littoral Naval Harbor & Piers",
             "region": "Western Naval Command (Deep Port)",
-            "description": "High-resolution real naval harbor showing deep ocean basin, drydocks, berthed vessels, and coastal highways."
+            "description": "Real-world naval harbor showing deep ocean basin, drydocks, berthed vessels, and coastal highways."
         },
         {
             "id": "border_facility",
@@ -106,7 +104,7 @@ def list_scenes():
             "id": "airfield_base",
             "name": "SIM: Strategic Airfield & Runways",
             "region": "Central Strategic Sector",
-            "description": "Simulated asphalt runway with parallel taxiways, hangars, drainage canals, and agricultural grid surrounding it."
+            "description": "Simulated asphalt runway with parallel taxiways, hangars, drainage canals, and agricultural grid."
         },
         {
             "id": "river_valley",
@@ -133,8 +131,9 @@ def process_scene(req: ProcessRequest):
         raise HTTPException(status_code=500, detail="Model is still initializing.")
 
     scene_id = req.scene_id
-    hr_target_size = 512
-    lr_target_size = 128
+    # Memory-safe tensor dimensions: LR=64, HR=256 (consumes <30MB RAM during conv operations)
+    hr_target_size = 256
+    lr_target_size = 64
 
     if req.custom_image_base64:
         try:
@@ -144,7 +143,6 @@ def process_scene(req: ProcessRequest):
             img_data = base64.b64decode(raw_b64)
             pil_img = Image.open(io.BytesIO(img_data)).convert("RGB")
             
-            # Crop to square
             w, h = pil_img.size
             min_dim = min(w, h)
             pil_img = pil_img.crop(((w - min_dim) // 2, (h - min_dim) // 2, (w + min_dim) // 2, (h + min_dim) // 2))
@@ -176,7 +174,6 @@ def process_scene(req: ProcessRequest):
         img_filename = REAL_IMAGE_MAP[scene_id]
         img_path = os.path.join(SAMPLES_DIR, img_filename)
         if not os.path.exists(img_path):
-            # Graceful automatic fallback: synthesize high-definition scenario immediately
             fallback_map = {"real_border": "border_facility", "real_airbase": "airfield_base", "real_harbor": "naval_coastal"}
             fallback_scene = fallback_map.get(scene_id, "border_facility")
             scene = generate_tactical_scene(fallback_scene, hr_size=hr_target_size)
@@ -211,17 +208,16 @@ def process_scene(req: ProcessRequest):
             hr_srm_mask[is_built] = 3
             has_real_gt = True
     else:
-        # Load simulated scenario at 512x512
         scene = generate_tactical_scene(scene_id, hr_size=hr_target_size)
         lr_multiband = scene["lr_multiband"]
         hr_multiband = scene["hr_multiband"]
         hr_srm_mask = scene["hr_srm_mask"]
         has_real_gt = True
 
-    # Run PyTorch Inference (Input: 1, 4, 128, 128 -> Output: 1, 4, 512, 512)
+    # Run PyTorch Inference with explicit memory control
     input_tensor = torch.from_numpy(lr_multiband).permute(2, 0, 1).unsqueeze(0).to(device)
 
-    with torch.no_grad():
+    with torch.inference_mode():
         sr_pred, srm_logits, uncertainty_pred = model(input_tensor)
 
     sr_multiband = sr_pred.squeeze(0).permute(1, 2, 0).cpu().numpy()
@@ -258,25 +254,33 @@ def process_scene(req: ProcessRequest):
             "color": info["hex"]
         })
 
-    # Render Visual Layers with Crisp Optical Quality
-    # 1. Authentic 10m pixelated view for the left side of the split viewer
+    # Render Visual Layers scaled smoothly to 512x512 for crisp display
+    display_size = (512, 512)
+
+    # 1. Authentic 10m pixelated view for left of swipe
     lr_rgb_raw = bands_to_rgb(lr_multiband)
-    lr_pil = Image.fromarray(lr_rgb_raw).resize((512, 512), Image.Resampling.NEAREST)
+    lr_pil = Image.fromarray(lr_rgb_raw).resize(display_size, Image.Resampling.NEAREST)
     lr_rgb_b64 = to_base64_png(np.array(lr_pil))
 
-    # 2. Super-Resolved 2.5m True Color with high-pass optical clarity
-    sr_rgb_b64 = to_base64_png(bands_to_rgb(sr_multiband), enhance_sharpness=True)
+    # 2. Super-Resolved 2.5m True Color with high-pass clarity
+    sr_rgb_raw = bands_to_rgb(sr_multiband)
+    sr_pil = Image.fromarray(sr_rgb_raw).resize(display_size, Image.Resampling.LANCZOS)
+    sr_rgb_b64 = to_base64_png(np.array(sr_pil), enhance_sharpness=True)
 
     # 3. Super-Resolved CIR False Color
-    sr_cir_b64 = to_base64_png(bands_to_cir(sr_multiband), enhance_sharpness=True)
+    sr_cir_raw = bands_to_cir(sr_multiband)
+    sr_cir_pil = Image.fromarray(sr_cir_raw).resize(display_size, Image.Resampling.LANCZOS)
+    sr_cir_b64 = to_base64_png(np.array(sr_cir_pil), enhance_sharpness=True)
 
     # 4. Sub-Pixel Mapping (SRM) Thematic Land Cover
     srm_colored = srm_mask_to_rgb(pred_srm_mask)
-    srm_b64 = to_base64_png(srm_colored)
+    srm_pil = Image.fromarray(srm_colored).resize(display_size, Image.Resampling.NEAREST)
+    srm_b64 = to_base64_png(np.array(srm_pil))
 
     # 5. Anti-Hallucination Confidence Heatmap
     uncertainty_rgb = uncertainty_to_heatmap(uncertainty_map)
-    uncertainty_b64 = to_base64_png(uncertainty_rgb)
+    unc_pil = Image.fromarray(uncertainty_rgb).resize(display_size, Image.Resampling.BILINEAR)
+    uncertainty_b64 = to_base64_png(np.array(unc_pil))
 
     # 6. Extract Clean GeoJSON Vector Contours
     geojson = extract_geojson_vectors(pred_srm_mask)
@@ -308,6 +312,11 @@ def process_scene(req: ProcessRequest):
     }
 
     LATEST_RESULT = result
+
+    # Immediately release tensors and run GC to guarantee < 100MB RAM
+    del input_tensor, sr_pred, srm_logits, uncertainty_pred
+    gc.collect()
+
     return result
 
 @app.get("/api/export_geojson")

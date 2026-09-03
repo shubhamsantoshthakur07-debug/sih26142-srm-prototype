@@ -12,7 +12,7 @@ from core.dataset_generator import generate_tactical_scene
 
 def get_calibrated_model(weights_path: str = "weights/srm_model.pth", device: str = "cpu") -> DualHeadSRMNet:
     """Load pre-trained weights or run ultra-fast calibration to guarantee real learned weights."""
-    model = DualHeadSRMNet(in_channels=4, num_classes=5, num_features=64, scale_factor=4)
+    model = DualHeadSRMNet(in_channels=4, num_classes=5, num_features=32, scale_factor=4)
     model = model.to(device)
 
     os.makedirs(os.path.dirname(weights_path) or ".", exist_ok=True)
@@ -31,11 +31,9 @@ def get_calibrated_model(weights_path: str = "weights/srm_model.pth", device: st
     criterion_sr = nn.L1Loss()
     criterion_srm = nn.CrossEntropyLoss()
 
-    # Fast convergence on 2 tactical scenes at 64x64 to preserve Render RAM
     scenes = ["border_facility", "naval_coastal"]
     training_data = [generate_tactical_scene(s, hr_size=64) for s in scenes]
 
-    # 15 quick steps takes < 2 seconds on CPU and uses < 100MB RAM
     for step in range(15):
         total_loss = 0.0
         for sample in training_data:
