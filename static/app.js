@@ -115,7 +115,9 @@ async function executeInference() {
         });
 
         if (!res.ok) {
-            throw new Error(`Inference error: ${res.statusText}`);
+            const errData = await res.json().catch(() => ({}));
+            const errMsg = errData.detail || res.statusText || `HTTP Status ${res.status}`;
+            throw new Error(errMsg);
         }
 
         currentResult = await res.json();
