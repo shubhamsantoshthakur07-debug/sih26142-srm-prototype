@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIH26142 | Deep Learning Super Resolution Mapping (NTRO)</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Tactical Navigation Bar -->
+    <header class="tactical-header">
+        <div class="brand-group">
+            <div class="emblem">NTRO</div>
+            <div class="title-wrap">
+                <h1>GEO-SRM INTELLIGENCE CONSOLE</h1>
+                <span class="sub-badge">SIH26142 • Multi-Spectral Super-Resolution & Sub-Pixel Mapping</span>
+            </div>
+        </div>
+        <div class="system-status">
+            <div class="status-chip"><span class="dot live"></span> SENSOR: <strong>SENTINEL-2 (MSI)</strong></div>
+            <div class="status-chip">SCALE: <strong>10m &rarr; 2.5m (4&times;)</strong></div>
+            <div class="status-chip">BACKBONE: <strong>DualHeadSRMNet</strong></div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="console-layout">
+        
+        <!-- Left Panel: Scenario Controls & Layer Options -->
+        <aside class="panel control-panel">
+            <div class="panel-section">
+                <h3 class="section-title"><span class="icon">&#9881;</span> TARGET SCENARIO</h3>
+                <div class="form-group">
+                    <label for="scene-select">Strategic Sector / Scene:</label>
+                    <select id="scene-select" class="tactical-select">
+                        <!-- Loaded dynamically via API -->
+                    </select>
+                </div>
+                <div id="scene-desc" class="scene-description-box">
+                    Loading scenario intelligence...
+                </div>
+
+                <div class="custom-upload-wrap">
+                    <label class="custom-file-label" for="custom-file-input">
+                        <span>&#128228; Ingest Custom Imagery</span>
+                    </label>
+                    <input type="file" id="custom-file-input" accept="image/*" style="display:none;">
+                    <span id="custom-filename" class="file-status">No custom file loaded</span>
+                </div>
+
+                <button id="run-btn" class="tactical-btn primary-btn">
+                    <span class="btn-glow"></span>
+                    <span class="btn-text">&#9654; EXECUTE SRM INFERENCE</span>
+                </button>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="section-title"><span class="icon">&#9874;</span> VISUALIZATION LAYERS</h3>
+                <div class="layer-radio-group">
+                    <label class="layer-radio active">
+                        <input type="radio" name="display-layer" value="sr_rgb" checked>
+                        <span class="radio-mark"></span>
+                        <div class="layer-info">
+                            <strong>4x Super-Resolved True Color</strong>
+                            <small>Band 4 (Red), 3 (Green), 2 (Blue) at 2.5m</small>
+                        </div>
+                    </label>
+
+                    <label class="layer-radio">
+                        <input type="radio" name="display-layer" value="sr_cir">
+                        <span class="radio-mark"></span>
+                        <div class="layer-info">
+                            <strong>Color-Infrared (CIR False Color)</strong>
+                            <small>NIR &rarr; R, Red &rarr; G, Green &rarr; B (Defense Std)</small>
+                        </div>
+                    </label>
+
+                    <label class="layer-radio">
+                        <input type="radio" name="display-layer" value="srm_thematic">
+                        <span class="radio-mark"></span>
+                        <div class="layer-info">
+                            <strong>Sub-Pixel Thematic Mapping (SRM)</strong>
+                            <small>Sub-pixel land-cover &amp; facility classification</small>
+                        </div>
+                    </label>
+
+                    <label class="layer-radio">
+                        <input type="radio" name="display-layer" value="uncertainty_heatmap">
+                        <span class="radio-mark"></span>
+                        <div class="layer-info">
+                            <strong>Anti-Hallucination Heatmap</strong>
+                            <small>Green = High Certainty, Red = Low Confidence</small>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="checkbox-row">
+                    <label class="tactical-checkbox">
+                        <input type="checkbox" id="vector-toggle" checked>
+                        <span class="check-mark"></span>
+                        <span>Overlay Extracted GIS Vectors</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="panel-section export-section">
+                <h3 class="section-title"><span class="icon">&#128190;</span> EXPORT INTEL</h3>
+                <div class="button-group">
+                    <button id="export-geojson-btn" class="tactical-btn secondary-btn">&#11123; GeoJSON Vectors</button>
+                    <button id="export-raster-btn" class="tactical-btn secondary-btn">&#11123; 2.5m Raster Layer</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center Viewport: Split-Screen Comparison Slider -->
+        <section class="panel viewport-panel">
+            <div class="viewport-header">
+                <div class="res-badge left-badge">
+                    <span class="tag">INPUT</span> 10m Medium Resolution
+                </div>
+                <div class="viewport-title">
+                    <span id="active-layer-name">4x Super-Resolved True Color</span>
+                </div>
+                <div class="res-badge right-badge">
+                    <span class="tag">OUTPUT</span> 2.5m Super-Resolved
+                </div>
+            </div>
+
+            <div class="comparison-container" id="comparison-container">
+                <!-- Bottom Layer: Super-Resolved / Active Processed Layer -->
+                <img id="sr-image" class="view-image" alt="Super Resolved">
+                
+                <!-- Canvas for Vector Overlay -->
+                <canvas id="vector-canvas" class="view-overlay"></canvas>
+
+                <!-- Top Layer: Original Medium Resolution (Clipped by slider) -->
+                <div class="resize-wrapper" id="resize-wrapper">
+                    <img id="lr-image" class="view-image" alt="Medium Resolution Input">
+                </div>
+
+                <!-- Draggable Divider Handle -->
+                <div class="slider-handle" id="slider-handle">
+                    <div class="handle-bar"></div>
+                    <div class="handle-grip">
+                        <span class="arrow-left">&#9664;</span>
+                        <span class="handle-text">SWIPE</span>
+                        <span class="arrow-right">&#9654;</span>
+                    </div>
+                    <div class="handle-bar"></div>
+                </div>
+
+                <!-- Loading Spinner Overlay -->
+                <div id="loading-overlay" class="loading-overlay">
+                    <div class="scanner-bar"></div>
+                    <div class="spinner"></div>
+                    <p class="loading-text">PROCESSING MULTI-SPECTRAL TENSORS...</p>
+                    <span class="loading-sub">Running DualHeadSRMNet &bull; Computing SAM &bull; PSF Verification</span>
+                </div>
+            </div>
+
+            <!-- Coordinate / Cursor Readout Footer -->
+            <div class="viewport-footer">
+                <div class="coord-item">COORDINATES: <span id="coord-display">28.6139° N, 77.2090° E</span></div>
+                <div class="coord-item">SUB-PIXEL FOOTPRINT: <strong>2.5m &times; 2.5m (6.25 m²)</strong></div>
+                <div class="coord-item">ZOOM: <span id="zoom-level">100%</span></div>
+            </div>
+        </section>
+
+        <!-- Right Panel: Live Defense Metrics & Sub-Pixel Class Analytics -->
+        <aside class="panel telemetry-panel">
+            <div class="panel-section">
+                <h3 class="section-title"><span class="icon">&#9889;</span> FIDELITY METRICS (NTRO HUD)</h3>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">PSNR</span>
+                        <span class="metric-value" id="val-psnr">-- dB</span>
+                        <span class="metric-hint">Target: &gt; 32 dB</span>
+                    </div>
+
+                    <div class="metric-card">
+                        <span class="metric-label">SSIM</span>
+                        <span class="metric-value" id="val-ssim">--</span>
+                        <span class="metric-hint">Structural Index</span>
+                    </div>
+
+                    <div class="metric-card highlight-metric">
+                        <span class="metric-label">SAM (Spectral Angle)</span>
+                        <span class="metric-value" id="val-sam">--°</span>
+                        <span class="metric-hint">Material Distortion &lt; 3.5°</span>
+                    </div>
+
+                    <div class="metric-card">
+                        <span class="metric-label">ERGAS</span>
+                        <span class="metric-value" id="val-ergas">--</span>
+                        <span class="metric-hint">Synthesis Error &lt; 3.0</span>
+                    </div>
+                </div>
+
+                <div class="hallucination-card">
+                    <div class="card-header-row">
+                        <span class="guard-title">ANTI-HALLUCINATION GUARD</span>
+                        <span id="hallucination-badge" class="badge pass">VERIFIED</span>
+                    </div>
+                    <div class="guard-metric-row">
+                        <span>PSF Cycle-Consistency Error:</span>
+                        <strong id="val-cycle">--</strong>
+                    </div>
+                    <p class="guard-explainer">
+                        Downsampling the 2.5m output through the satellite sensor PSF confirms zero spurious features.
+                    </p>
+                </div>
+            </div>
+
+            <div class="panel-section">
+                <h3 class="section-title"><span class="icon">&#9638;</span> SUB-PIXEL LAND COVER (SRM)</h3>
+                <div class="accuracy-summary">
+                    <div class="acc-badge">
+                        <span>Sub-Pixel Accuracy:</span>
+                        <strong id="val-srm-acc">--%</strong>
+                    </div>
+                    <div class="acc-badge">
+                        <span>Thematic mIoU:</span>
+                        <strong id="val-srm-miou">--%</strong>
+                    </div>
+                </div>
+
+                <div id="class-breakdown-list" class="class-breakdown-list">
+                    <!-- Loaded dynamically via API -->
+                </div>
+            </div>
+
+            <div class="panel-section legend-section">
+                <h3 class="section-title"><span class="icon">&#9873;</span> SRM THEMATIC LEGEND</h3>
+                <div class="legend-grid">
+                    <div class="legend-item"><span class="legend-color" style="background:#1e90ff;"></span> Water Body</div>
+                    <div class="legend-item"><span class="legend-color" style="background:#228b22;"></span> Vegetation / Forest</div>
+                    <div class="legend-item"><span class="legend-color" style="background:#ff4500;"></span> Tactical Facility</div>
+                    <div class="legend-item"><span class="legend-color" style="background:#ffd700;"></span> Roads / Runway</div>
+                    <div class="legend-item"><span class="legend-color" style="background:#d2b48c;"></span> Barren Soil</div>
+                </div>
+            </div>
+        </aside>
+
+    </main>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

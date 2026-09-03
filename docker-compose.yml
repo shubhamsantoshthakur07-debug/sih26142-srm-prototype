@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  srm-console:
+    build: .
+    container_name: sih26142_srm_console
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
