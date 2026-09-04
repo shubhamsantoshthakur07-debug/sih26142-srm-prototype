@@ -71,6 +71,7 @@ def startup_event():
     print("[Server] DualHeadSRMNet initialized and ready for requests.", flush=True)
 
 @app.get("/")
+@app.get("/home")
 @app.get("/dashboard")
 @app.get("/analytics")
 @app.get("/methodology")

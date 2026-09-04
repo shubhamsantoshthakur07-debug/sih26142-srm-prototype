@@ -107,7 +107,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 // =========================================================
 function setupRouter() {
     const handleHash = () => {
-        let hash = (window.location.hash || "#studio").replace("#", "");
+        let hash = (window.location.hash || "#home").replace("#", "").trim();
+        if (!hash) hash = "home";
         if (hash === "analytics") hash = "dashboard";
         const pageId = "page-" + hash;
         navigateTo(pageId);
@@ -120,7 +121,7 @@ function setupRouter() {
             const pageId = item.getAttribute("data-page");
             if (pageId) {
                 navigateTo(pageId);
-                mobileDrawer.classList.remove("active");
+                if (mobileDrawer) mobileDrawer.classList.remove("active");
             }
         });
     });
@@ -130,7 +131,7 @@ function setupRouter() {
 
 function navigateTo(pageId) {
     document.querySelectorAll(".page-view").forEach(p => p.classList.remove("active"));
-    const targetPage = document.getElementById(pageId) || document.getElementById("page-studio");
+    const targetPage = document.getElementById(pageId) || document.getElementById("page-home");
     targetPage.classList.add("active");
 
     document.querySelectorAll(".nav-tab, .drawer-link, .bottom-nav-item").forEach(link => {
@@ -142,8 +143,33 @@ function navigateTo(pageId) {
         }
     });
 
+    const targetHash = pageId.replace("page-", "");
+    if (window.location.hash.replace("#", "") !== targetHash) {
+        history.replaceState(null, null, "#" + targetHash);
+    }
+
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
+window.navigateTo = navigateTo;
+
+// Global helpers for Home page function card shortcuts
+window.launchMeasureTool = function() {
+    navigateTo('page-studio');
+    setTimeout(() => {
+        if (toolMeasureBtn && !toolMeasureBtn.classList.contains('active')) {
+            toolMeasureBtn.click();
+        }
+    }, 350);
+};
+
+window.launchDownloadReport = function() {
+    navigateTo('page-dashboard');
+    setTimeout(() => {
+        if (downloadReportBtn) {
+            downloadReportBtn.click();
+        }
+    }, 350);
+};
 
 function setupMobileMenu() {
     if (mobileMenuToggle) {

@@ -105,7 +105,7 @@ def test_api_endpoints():
 
     with TestClient(app) as client:
         # Test multi-page routes
-        for path in ["/", "/dashboard", "/analytics", "/methodology", "/catalog", "/about"]:
+        for path in ["/", "/home", "/dashboard", "/analytics", "/methodology", "/catalog", "/about"]:
             res = client.get(path)
             assert res.status_code == 200, f"Route {path} failed: {res.status_code}"
 

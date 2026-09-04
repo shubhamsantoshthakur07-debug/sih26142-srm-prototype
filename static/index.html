@@ -22,7 +22,10 @@
 
         <!-- Desktop Navigation Tabs -->
         <nav class="nav-links" id="main-nav">
-            <a href="#studio" class="nav-tab active" data-page="page-studio">
+            <a href="#home" class="nav-tab active" data-page="page-home">
+                <span class="tab-icon">&#127760;</span> Home Portal
+            </a>
+            <a href="#studio" class="nav-tab" data-page="page-studio">
                 <span class="tab-icon">&#128752;</span> Recon Studio
             </a>
             <a href="#dashboard" class="nav-tab" data-page="page-dashboard">
@@ -54,7 +57,8 @@
 
     <!-- Mobile Slide-out Drawer -->
     <div class="mobile-drawer" id="mobile-drawer">
-        <a href="#studio" class="drawer-link active" data-page="page-studio">&#128752; Recon Studio</a>
+        <a href="#home" class="drawer-link active" data-page="page-home">&#127760; Home Portal</a>
+        <a href="#studio" class="drawer-link" data-page="page-studio">&#128752; Recon Studio</a>
         <a href="#dashboard" class="drawer-link" data-page="page-dashboard">&#128202; Command Dashboard</a>
         <a href="#methodology" class="drawer-link" data-page="page-methodology">&#129504; Model &amp; Methodology</a>
         <a href="#catalog" class="drawer-link" data-page="page-catalog">&#127757; Mission Catalog</a>
@@ -64,10 +68,183 @@
     <!-- Main Multi-Page App Container -->
     <div class="app-viewport">
 
+        <!-- ============================================================== -->
+        <!-- PAGE 0: SPACIOUS LANDING PORTAL & FUNCTION DASHBOARD (DEFAULT) -->
+        <!-- ============================================================== -->
+        <section class="page-view active" id="page-home">
+            <div class="landing-container">
+                
+                <!-- Hero Section: Strategic Purpose & Plain-English Explanation -->
+                <div class="hero-card">
+                    <div class="hero-content">
+                        <span class="tag-pill">NATIONAL TECHNICAL RESEARCH ORGANISATION • SIH26142</span>
+                        <h1 class="hero-title">Deep Learning Multi-Spectral Super-Resolution &amp; Sub-Pixel Mapping (SRM)</h1>
+                        <p class="hero-description">
+                            Turning Medium-Resolution Sentinel-2 Satellite Imagery (<strong>10m GSD</strong>) into High-Precision Tactical Intelligence (<strong>2.5m GSD</strong>) using <code>DualHeadSRMNet</code> — unmixing mixed pixels into discrete land-cover surfaces with mathematical zero-hallucination verification.
+                        </p>
+                        
+                        <!-- Core Capability Badges -->
+                        <div class="hero-badges-row">
+                            <div class="h-badge"><span class="h-icon">&#9889;</span> 4&times; to 8&times; Spatial Magnification</div>
+                            <div class="h-badge"><span class="h-icon">&#127807;</span> 8-Mode Spectral Toolkit (NDVI, NDWI, FLIR)</div>
+                            <div class="h-badge"><span class="h-icon">&#128737;</span> 100% Zero-Hallucination PSF Proof</div>
+                            <div class="h-badge"><span class="h-icon">&#128241;</span> Touchscreen Mobile Optimized</div>
+                        </div>
+
+                        <!-- Main Hero Action Buttons -->
+                        <div class="hero-actions">
+                            <button class="tactical-btn primary-btn hero-btn" onclick="navigateTo('page-studio')">
+                                &#128752; LAUNCH RECON STUDIO
+                            </button>
+                            <button class="tactical-btn secondary-btn hero-btn" onclick="navigateTo('page-dashboard')">
+                                &#128202; OPEN COMMAND DASHBOARD
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mission Workflow Timeline -->
+                <div class="workflow-strip">
+                    <div class="wf-step">
+                        <div class="wf-num">01</div>
+                        <div class="wf-info">
+                            <strong>10m Ingestion</strong>
+                            <small>Blue, Green, Red &amp; NIR Bands</small>
+                        </div>
+                    </div>
+                    <div class="wf-arrow">&rarr;</div>
+                    <div class="wf-step">
+                        <div class="wf-num">02</div>
+                        <div class="wf-info">
+                            <strong>Channel Attention</strong>
+                            <small>Residual RCAB Backbone</small>
+                        </div>
+                    </div>
+                    <div class="wf-arrow">&rarr;</div>
+                    <div class="wf-step">
+                        <div class="wf-num">03</div>
+                        <div class="wf-info">
+                            <strong>Dual-Head SRM</strong>
+                            <small>2.5m Physical SR + 5-Class Map</small>
+                        </div>
+                    </div>
+                    <div class="wf-arrow">&rarr;</div>
+                    <div class="wf-step">
+                        <div class="wf-num">04</div>
+                        <div class="wf-info">
+                            <strong>Optical PSF Guard</strong>
+                            <small>Sensor Cycle Error &lt; 0.015</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Operational Function Dashboard (Click to Launch) -->
+                <div class="section-divider">
+                    <h3>OPERATIONAL FUNCTION DASHBOARD &bull; SELECT A MODULE TO USE</h3>
+                    <p>Click on any operational tool below to immediately enter the workspace:</p>
+                </div>
+
+                <div class="function-hub-grid">
+                    
+                    <!-- Module 1: Recon Studio -->
+                    <div class="func-card" onclick="navigateTo('page-studio')">
+                        <div class="func-icon-wrap" style="background:rgba(56, 139, 253, 0.15); color:var(--accent-cyan);">
+                            &#128752;
+                        </div>
+                        <div class="func-body">
+                            <h4>Reconnaissance Studio</h4>
+                            <p>Interactive split-screen swipe slider comparing 10m input vs 2.5m output across 8 spectral modes (True Color, CIR, SRM, NDVI, NDWI, FLIR, Edges) and custom image upload.</p>
+                            <div class="func-footer">
+                                <span class="func-tag">CORE WORKSPACE</span>
+                                <span class="func-action-link">Launch Studio &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Module 2: Command Dashboard -->
+                    <div class="func-card" onclick="navigateTo('page-dashboard')">
+                        <div class="func-icon-wrap" style="background:rgba(63, 185, 80, 0.15); color:var(--accent-emerald);">
+                            &#128202;
+                        </div>
+                        <div class="func-body">
+                            <h4>Operations &amp; C4ISR Dashboard</h4>
+                            <p>Real-time telemetry, interactive land-cover allocation donut chart, 4-band radiometric spectral response curves, and automated target &amp; threat detection matrix.</p>
+                            <div class="func-footer">
+                                <span class="func-tag">ANALYTICS &amp; THREATS</span>
+                                <span class="func-action-link">Open Dashboard &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Module 3: Target Measurement & HUD Tools -->
+                    <div class="func-card" onclick="launchMeasureTool()">
+                        <div class="func-icon-wrap" style="background:rgba(210, 153, 34, 0.15); color:var(--accent-amber);">
+                            &#128207;
+                        </div>
+                        <div class="func-body">
+                            <h4>Target Measurement &amp; HUD Tools</h4>
+                            <p>Ground distance ruler calculating real-world meters between any 2 clicked points, 3x inspection magnifying loupe, and military coordinate reticle grid overlay.</p>
+                            <div class="func-footer">
+                                <span class="func-tag">MEASUREMENT HUD</span>
+                                <span class="func-action-link">Open Tools &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Module 4: Satellite Mission Catalog -->
+                    <div class="func-card" onclick="navigateTo('page-catalog')">
+                        <div class="func-icon-wrap" style="background:rgba(88, 166, 255, 0.15); color:#388bfd;">
+                            &#127757;
+                        </div>
+                        <div class="func-body">
+                            <h4>Satellite Mission Catalog</h4>
+                            <p>8 preloaded strategic reconnaissance sectors: Himalayan Border Outpost, Forward Airbase, Naval Harbor, Siachen Glacier, Doklam Plateau, Gwadar Bay, and Sir Creek.</p>
+                            <div class="func-footer">
+                                <span class="func-tag">8 STRATEGIC SECTORS</span>
+                                <span class="func-action-link">Explore Catalog &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Module 5: Model Architecture & Methodology -->
+                    <div class="func-card" onclick="navigateTo('page-methodology')">
+                        <div class="func-icon-wrap" style="background:rgba(188, 140, 255, 0.15); color:var(--accent-purple);">
+                            &#129504;
+                        </div>
+                        <div class="func-body">
+                            <h4>Neural Architecture &amp; Mathematics</h4>
+                            <p>Interactive engineering breakdown of DualHeadSRMNet progressive 2-stage PixelShuffle pipeline, Spectral Angle Mapper (SAM) derivation, and sensor PSF loss formulas.</p>
+                            <div class="func-footer">
+                                <span class="func-tag">AI ENGINEERING</span>
+                                <span class="func-action-link">View Methodology &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Module 6: Defense Intelligence Briefing -->
+                    <div class="func-card" onclick="launchDownloadReport()">
+                        <div class="func-icon-wrap" style="background:rgba(248, 81, 73, 0.15); color:var(--accent-crimson);">
+                            &#128196;
+                        </div>
+                        <div class="func-body">
+                            <h4>Defense Intelligence Briefing</h4>
+                            <p>One-click automated intelligence briefing export in formatted Markdown/PDF and tabulated CSV dataset for immediate import into ArcGIS or QGIS defense systems.</p>
+                            <div class="func-footer">
+                                <span class="func-tag">INTEL EXPORTER</span>
+                                <span class="func-action-link">Download Briefing &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
         <!-- ========================================== -->
         <!-- PAGE 1: RECON STUDIO (Interactive Console) -->
         <!-- ========================================== -->
-        <main class="page-view active" id="page-studio">
+        <main class="page-view" id="page-studio">
             <div class="console-layout">
                 
                 <!-- Left Panel: Scenario Controls, Multiplier & Layer Options -->
@@ -873,17 +1050,17 @@
 
     <!-- Mobile Bottom Navigation Bar (Visible only on phone screens) -->
     <nav class="mobile-bottom-nav">
-        <a href="#studio" class="bottom-nav-item active" data-page="page-studio">
+        <a href="#home" class="bottom-nav-item active" data-page="page-home">
+            <span class="b-icon">&#127760;</span>
+            <span class="b-label">Home</span>
+        </a>
+        <a href="#studio" class="bottom-nav-item" data-page="page-studio">
             <span class="b-icon">&#128752;</span>
             <span class="b-label">Studio</span>
         </a>
         <a href="#dashboard" class="bottom-nav-item" data-page="page-dashboard">
             <span class="b-icon">&#128202;</span>
             <span class="b-label">Dashboard</span>
-        </a>
-        <a href="#methodology" class="bottom-nav-item" data-page="page-methodology">
-            <span class="b-icon">&#129504;</span>
-            <span class="b-label">Method</span>
         </a>
         <a href="#catalog" class="bottom-nav-item" data-page="page-catalog">
             <span class="b-icon">&#127757;</span>
