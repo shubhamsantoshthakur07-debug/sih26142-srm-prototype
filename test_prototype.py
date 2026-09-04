@@ -104,9 +104,16 @@ def test_api_endpoints():
     from server.app import app
 
     with TestClient(app) as client:
-        # Test root HTML
-        res_root = client.get("/")
-        assert res_root.status_code == 200
+        # Test multi-page routes
+        for path in ["/", "/analytics", "/methodology", "/catalog", "/about"]:
+            res = client.get(path)
+            assert res.status_code == 200, f"Route {path} failed: {res.status_code}"
+
+        # Test analytics endpoint
+        res_an = client.get("/api/analytics")
+        assert res_an.status_code == 200
+        an_data = res_an.json()
+        assert "fidelity_benchmarks" in an_data
 
         # Test scenes list
         res_scenes = client.get("/api/scenes")
@@ -123,7 +130,7 @@ def test_api_endpoints():
         assert "sr_rgb" in data["layers"]
         assert "srm_thematic" in data["layers"]
         assert "geojson" in data
-        print("  --> PASS: /api/scenes and /api/process returned valid payloads.")
+        print("  --> PASS: All 5 multi-page routes and APIs (/analytics, /scenes, /process) verified.")
 
 if __name__ == "__main__":
     print("=" * 60)
