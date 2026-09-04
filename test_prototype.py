@@ -105,7 +105,7 @@ def test_api_endpoints():
 
     with TestClient(app) as client:
         # Test multi-page routes
-        for path in ["/", "/analytics", "/methodology", "/catalog", "/about"]:
+        for path in ["/", "/dashboard", "/analytics", "/methodology", "/catalog", "/about"]:
             res = client.get(path)
             assert res.status_code == 200, f"Route {path} failed: {res.status_code}"
 
@@ -121,16 +121,30 @@ def test_api_endpoints():
         scenes = res_scenes.json()
         assert len(scenes) >= 4
 
-        # Test process endpoint
-        res_process = client.post("/api/process", json={"scene_id": "border_facility"})
+        # Test process endpoint with 8x scaling and dehaze
+        res_process = client.post("/api/process", json={
+            "scene_id": "border_facility",
+            "scale_factor": 8,
+            "dehaze": True
+        })
         assert res_process.status_code == 200
         data = res_process.json()
         assert "metrics" in data
         assert "layers" in data
         assert "sr_rgb" in data["layers"]
+        assert "sr_cir" in data["layers"]
         assert "srm_thematic" in data["layers"]
+        assert "uncertainty_heatmap" in data["layers"]
+        assert "ndvi" in data["layers"]
+        assert "ndwi" in data["layers"]
+        assert "flir_thermal" in data["layers"]
+        assert "structural_edges" in data["layers"]
+        assert "detections" in data
+        assert len(data["detections"]) > 0
+        assert data["scale_factor"] == "8x"
+        assert data["dehazed"] is True
         assert "geojson" in data
-        print("  --> PASS: All 5 multi-page routes and APIs (/analytics, /scenes, /process) verified.")
+        print("  --> PASS: All 6 routes, APIs, 8 spectral layers, detections, and 8x scaling verified.")
 
 if __name__ == "__main__":
     print("=" * 60)

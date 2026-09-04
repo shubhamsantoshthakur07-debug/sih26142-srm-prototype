@@ -58,6 +58,121 @@ def bands_to_cir(multiband: np.ndarray) -> np.ndarray:
     cir = np.stack([nir_band, r_band, g_band], axis=-1)
     return np.clip(cir * 255.0, 0, 255).astype(np.uint8)
 
+def bands_to_ndvi(multiband: np.ndarray) -> np.ndarray:
+    """
+    Normalized Difference Vegetation Index (NDVI) = (NIR - Red) / (NIR + Red)
+    Mapped to standard remote-sensing ecological chlorophyll colormap.
+    """
+    r = multiband[..., 0]
+    nir = multiband[..., 3]
+    ndvi = (nir - r) / (nir + r + 1e-6)
+    
+    h, w = ndvi.shape
+    rgb = np.zeros((h, w, 3), dtype=np.uint8)
+    
+    # Water & Barren (< 0.1) -> Reddish / Tan
+    mask_barren = ndvi < 0.1
+    rgb[mask_barren] = [190, 150, 105]
+    
+    # Moderate vegetation (0.1 - 0.4) -> Amber / Lime
+    mask_mod = (ndvi >= 0.1) & (ndvi < 0.4)
+    t_mod = (ndvi[mask_mod] - 0.1) / 0.3
+    rgb[mask_mod, 0] = (220 - t_mod * 120).astype(np.uint8)
+    rgb[mask_mod, 1] = (200 + t_mod * 40).astype(np.uint8)
+    rgb[mask_mod, 2] = 30
+    
+    # Dense healthy canopy (>= 0.4) -> Deep Emerald Green
+    mask_dense = ndvi >= 0.4
+    t_dense = np.clip((ndvi[mask_dense] - 0.4) / 0.4, 0, 1)
+    rgb[mask_dense, 0] = (60 - t_dense * 40).astype(np.uint8)
+    rgb[mask_dense, 1] = (210 + t_dense * 40).astype(np.uint8)
+    rgb[mask_dense, 2] = (40 - t_dense * 20).astype(np.uint8)
+    
+    return rgb
+
+def bands_to_ndwi(multiband: np.ndarray) -> np.ndarray:
+    """
+    Normalized Difference Water Index (NDWI) = (Green - NIR) / (Green + NIR)
+    Isolates shoreline, ports, inland canals, and water bodies.
+    """
+    g = multiband[..., 1]
+    nir = multiband[..., 3]
+    ndwi = (g - nir) / (g + nir + 1e-6)
+    
+    h, w = ndwi.shape
+    rgb = np.zeros((h, w, 3), dtype=np.uint8)
+    
+    # Terrestrial Land (NDWI <= 0) -> Dark Charcoal / Slate
+    mask_land = ndwi <= 0
+    t_land = np.clip((ndwi[mask_land] + 0.6) / 0.6, 0, 1)
+    rgb[mask_land, 0] = (40 + t_land * 30).astype(np.uint8)
+    rgb[mask_land, 1] = (45 + t_land * 30).astype(np.uint8)
+    rgb[mask_land, 2] = (50 + t_land * 30).astype(np.uint8)
+    
+    # Water Bodies (NDWI > 0) -> Radiant Cyan / Deep Ocean Blue
+    mask_water = ndwi > 0
+    t_water = np.clip(ndwi[mask_water] / 0.5, 0, 1)
+    rgb[mask_water, 0] = (10 + t_water * 30).astype(np.uint8)
+    rgb[mask_water, 1] = (120 + t_water * 100).astype(np.uint8)
+    rgb[mask_water, 2] = (220 + t_water * 35).astype(np.uint8)
+    
+    return rgb
+
+def bands_to_flir(multiband: np.ndarray) -> np.ndarray:
+    """
+    Thermal FLIR Ironbow Night-Vision Composite.
+    Simulates forward-looking infrared surveillance of engines, runways, and facilities.
+    """
+    lum = (multiband[..., 0] * 0.3 + multiband[..., 1] * 0.4 + multiband[..., 3] * 0.3)
+    t = np.clip((lum - lum.min()) / (lum.max() - lum.min() + 1e-6), 0.0, 1.0)
+    
+    h, w = t.shape
+    rgb = np.zeros((h, w, 3), dtype=np.uint8)
+    
+    # Low temp (< 0.33) -> Dark Purple to Blue
+    m1 = t < 0.33
+    r1 = t[m1] / 0.33
+    rgb[m1, 0] = (20 + r1 * 80).astype(np.uint8)
+    rgb[m1, 1] = (10 + r1 * 20).astype(np.uint8)
+    rgb[m1, 2] = (80 + r1 * 120).astype(np.uint8)
+    
+    # Mid temp (0.33 - 0.66) -> Crimson to Orange
+    m2 = (t >= 0.33) & (t < 0.66)
+    r2 = (t[m2] - 0.33) / 0.33
+    rgb[m2, 0] = (120 + r2 * 120).astype(np.uint8)
+    rgb[m2, 1] = (30 + r2 * 110).astype(np.uint8)
+    rgb[m2, 2] = (180 - r2 * 160).astype(np.uint8)
+    
+    # High temp (>= 0.66) -> Hot Yellow to White
+    m3 = t >= 0.66
+    r3 = (t[m3] - 0.66) / 0.34
+    rgb[m3, 0] = (240 + r3 * 15).astype(np.uint8)
+    rgb[m3, 1] = (150 + r3 * 105).astype(np.uint8)
+    rgb[m3, 2] = (30 + r3 * 220).astype(np.uint8)
+    
+    return rgb
+
+def bands_to_edges(multiband: np.ndarray) -> np.ndarray:
+    """High-pass structural boundary filter highlighting tarmac, runways, and facility borders."""
+    lum = (multiband[..., 0] * 0.35 + multiband[..., 1] * 0.45 + multiband[..., 2] * 0.2)
+    # 3x3 Laplacian kernel approximation
+    lap = np.zeros_like(lum)
+    lap[1:-1, 1:-1] = (
+        8.0 * lum[1:-1, 1:-1]
+        - lum[:-2, :-2] - lum[:-2, 1:-1] - lum[:-2, 2:]
+        - lum[1:-1, :-2] - lum[1:-1, 2:]
+        - lum[2:, :-2] - lum[2:, 1:-1] - lum[2:, 2:]
+    )
+    edge = np.clip(np.abs(lap) * 4.0, 0.0, 1.0)
+    
+    # Render tactical neon cyan edges on dark slate
+    h, w = edge.shape
+    rgb = np.zeros((h, w, 3), dtype=np.uint8)
+    rgb[..., 0] = (edge * 30).astype(np.uint8)
+    rgb[..., 1] = (edge * 210).astype(np.uint8)
+    rgb[..., 2] = (edge * 255).astype(np.uint8)
+    return rgb
+
 def srm_mask_to_rgb(mask: np.ndarray) -> np.ndarray:
     """Convert discrete 2D class mask (H, W) into an RGB thematic map."""
     h, w = mask.shape
